@@ -10,10 +10,51 @@ namespace Ethel_AI
     public partial class MainWindow : Window
     {
         private bool isListening = false;
+        private TextToSpeechService speechService;
+        private AzureSpeechService? azureSpeechService;
 
         public MainWindow()
         {
             InitializeComponent();
+            string? speechKey =
+        Environment.GetEnvironmentVariable("ETHEL_AZURE_SPEECH_KEY");
+
+            if (string.IsNullOrWhiteSpace(speechKey))
+            {
+                MessageBox.Show("Azure Speech key was not found.");
+                return;
+            }
+
+            azureSpeechService = new AzureSpeechService(speechKey);
+
+            _ = TestAzureVoiceAsync();
+        }
+
+        private async Task TestAzureVoiceAsync()
+        {
+            await SpeakAsync(
+                "Hey! I'm Ethel. Ready when you are."
+            );
+        }
+
+        private async Task SpeakAsync(string text)
+        {
+            if (azureSpeechService == null)
+                return;
+
+            try
+            {
+                await azureSpeechService.SpeakAsync(text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    ex.Message,
+                    "Speech Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+            }
         }
 
         private void MicrophoneButton_Click(object sender, RoutedEventArgs e)
