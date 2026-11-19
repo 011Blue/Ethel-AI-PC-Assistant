@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.CognitiveServices.Speech;
+using System.Windows;
 
 namespace Ethel_AI
 {
@@ -19,17 +20,18 @@ namespace Ethel_AI
                 "en-US-JennyNeural";
         }
 
+
         public async Task SpeakAsync(string text)
         {
-            using var synthesizer =
-                new SpeechSynthesizer(speechConfig);
+            using var synthesizer = new SpeechSynthesizer(speechConfig);
 
-            using var result =
-                await synthesizer.SpeakTextAsync(text);
+            using var result = await synthesizer.SpeakTextAsync(text);
 
             if (result.Reason == ResultReason.SynthesizingAudioCompleted)
             {
-                // Speech generated successfully
+                Console.WriteLine(
+                    $"Audio generated successfully. Characters: {text.Length}"
+                );
             }
             else
             {
@@ -38,5 +40,6 @@ namespace Ethel_AI
                 );
             }
         }
+
     }
 }

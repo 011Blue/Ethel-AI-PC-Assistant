@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -14,12 +15,13 @@ namespace Ethel_AI
         private TextToSpeechService speechService;
         private AzureSpeechService? azureSpeechService;
         private SpeechRecognitionService? recognitionService;
+        private AIService? aiService;
 
         public MainWindow()
         {
             InitializeComponent();
-            string? speechKey =
-        Environment.GetEnvironmentVariable("ETHEL_AZURE_SPEECH_KEY");
+            aiService = new AIService();
+            string? speechKey = Environment.GetEnvironmentVariable("ETHEL_AZURE_SPEECH_KEY");
 
             if (string.IsNullOrWhiteSpace(speechKey))
             {
@@ -36,7 +38,7 @@ namespace Ethel_AI
         private async Task TestAzureVoiceAsync()
         {
             await SpeakAsync(
-                "Hey! I'm Ethel. Ready when you are."
+                "Hey! I'm Ethel. Your Personal Assistant."
             );
         }
 
@@ -109,37 +111,45 @@ namespace Ethel_AI
             ConversationPanel.Children.Add(messageBorder);
         }
 
+
         private async Task ProcessMessageAsync(string message)
         {
-            string response;
+            var timer = System.Diagnostics.Stopwatch.StartNew();
 
-            string input = message.ToLower().Trim();
+            try
+            {
+                StatusText.Text = "● Thinking...";
 
-            if (input.Contains("hello") || input.Contains("hi"))
-            {
-                response = "Hello! It's good to hear from you.";
-            }
-            else if (input.Contains("how are you"))
-            {
-                response = "I'm doing great! How can I help you?";
-            }
-            else if (input.Contains("your name"))
-            {
-                response = "My name is Ethel, your personal AI assistant.";
-            }
-            else if (input.Contains("thank you"))
-            {
-                response = "My Pleasure!";
-            }
-            else
-            {
-                response = "I heard you, but I don't know how to handle that request yet.";
-            }
+                string response = await aiService!.GetResponseAsync(message);
 
-            AddMessage("Ethel", response);
+                timer.Stop();
 
-            await SpeakAsync(response);
+                AddMessage("Ethel", response);
+
+                StatusText.Text = $"● AI replied in {timer.Elapsed.TotalSeconds:F1}s";
+
+                var speechTimer = System.Diagnostics.Stopwatch.StartNew();
+
+                await SpeakAsync(response);
+
+                speechTimer.Stop();
+
+                StatusText.Text =
+                    $"● Ready | AI: {timer.Elapsed.TotalSeconds:F1}s | Voice: {speechTimer.Elapsed.TotalSeconds:F1}s";
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = "● Error";
+
+                MessageBox.Show(
+                    ex.Message,
+                    "Ethel Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+            }
         }
+
 
         private async void MicrophoneButton_Click(object sender, RoutedEventArgs e)
         {

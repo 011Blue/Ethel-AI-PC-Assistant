@@ -13,7 +13,8 @@ namespace Ethel_AI
         {
             httpClient = new HttpClient
             {
-                BaseAddress = new Uri("http://localhost:11434/")
+                BaseAddress = new Uri("http://localhost:11434/"),
+                Timeout = TimeSpan.FromMinutes(5)
             };
         }
 
@@ -27,7 +28,10 @@ namespace Ethel_AI
                     new
                     {
                         role = "system",
-                        content = "You are Ethel, a friendly and helpful personal AI assistant for Windows."
+                        content = "You are Ethel, a friendly personal AI assistant. " +
+                                  "Speak naturally and answer directly. " +
+                                  "Keep normal answers between 2 and 4 short sentences. " +
+                                  "Avoid unnecessary explanations unless the user asks for detail."
                     },
                     new
                     {
@@ -35,7 +39,12 @@ namespace Ethel_AI
                         content = message
                     }
                 },
-                stream = false
+                stream = false,
+                think = false,
+                options = new
+                {
+                    num_predict = 100
+                }
             };
 
             string json = JsonSerializer.Serialize(requestData);
@@ -53,14 +62,17 @@ namespace Ethel_AI
 
             response.EnsureSuccessStatusCode();
 
-            string responseJson = await response.Content.ReadAsStringAsync();
+            string responseJson =
+                await response.Content.ReadAsStringAsync();
 
-            using JsonDocument document = JsonDocument.Parse(responseJson);
+            using JsonDocument document =
+                JsonDocument.Parse(responseJson);
 
             return document.RootElement
                 .GetProperty("message")
                 .GetProperty("content")
-                .GetString() ?? "I'm sorry, I couldn't generate a response.";
+                .GetString()
+                ?? "I'm sorry, I couldn't generate a response.";
         }
     }
 }
