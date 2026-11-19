@@ -27,6 +27,7 @@ namespace Ethel_AI
 
             using var result = await synthesizer.SpeakTextAsync(text);
 
+
             if (result.Reason == ResultReason.SynthesizingAudioCompleted)
             {
                 Console.WriteLine(

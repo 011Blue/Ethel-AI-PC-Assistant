@@ -2,12 +2,14 @@
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace Ethel_AI
 {
     public class AIService
     {
         private readonly HttpClient httpClient;
+
 
         public AIService()
         {
@@ -23,6 +25,7 @@ namespace Ethel_AI
             var requestData = new
             {
                 model = "qwen3:4b",
+                keep_alive = "30m",
                 messages = new[]
                 {
                     new
@@ -66,13 +69,46 @@ namespace Ethel_AI
                 await response.Content.ReadAsStringAsync();
 
             using JsonDocument document =
-                JsonDocument.Parse(responseJson);
+    JsonDocument.Parse(responseJson);
 
-            return document.RootElement
+            var root = document.RootElement;
+
+            string answer = root
                 .GetProperty("message")
                 .GetProperty("content")
                 .GetString()
                 ?? "I'm sorry, I couldn't generate a response.";
+
+            double totalTime =
+                root.GetProperty("total_duration").GetDouble() / 1_000_000_000;
+
+            double loadingTime =
+                root.GetProperty("load_duration").GetDouble() / 1_000_000_000;
+
+            double promptTime =
+                root.GetProperty("prompt_eval_duration").GetDouble() / 1_000_000_000;
+
+            double generationTime =
+                root.GetProperty("eval_duration").GetDouble() / 1_000_000_000;
+
+            long generatedTokens =
+                root.GetProperty("eval_count").GetInt64();
+
+            double tokensPerSecond =
+                generationTime > 0
+                    ? generatedTokens / generationTime
+                    : 0;
+
+            Debug.WriteLine("===== ETHEL PERFORMANCE =====");
+            Debug.WriteLine($"Total time: {totalTime:F2}s");
+            Debug.WriteLine($"Model loading: {loadingTime:F2}s");
+            Debug.WriteLine($"Prompt processing: {promptTime:F2}s");
+            Debug.WriteLine($"Answer generation: {generationTime:F2}s");
+            Debug.WriteLine($"Generated tokens: {generatedTokens}");
+            Debug.WriteLine($"Tokens per second: {tokensPerSecond:F2}");
+            Debug.WriteLine("=============================");
+
+            return answer;
         }
     }
 }
